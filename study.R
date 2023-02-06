@@ -1,3 +1,4 @@
+#https://bookdown.org/ahn_media/bookdown-demo/cleantool.html#purrr
 # Set Enviro --------------------------------------------------------------
 rm(list=ls())
 library(tidyverse)
@@ -194,3 +195,90 @@ text2 %>% count(form, sort= T) %>%
   ggplot(aes(word,n))+
   geom_col()+
   coord_flip()
+
+# stringr -----------------------------------------------------------------
+love_v <- c(
+  "You still fascinate and inspire me. :)",
+  "You influence me for the better ~ .",
+  "You’re the object of my desire, the #1 Earthly reason for my existence!!!",
+  " ... ",
+  "그대는 여전히 매혹적이고 나에게 영감을 줍니다. ^^",
+  "당신은 나로 하여금 더 나은 사람이 되도록 했습니다 ~.",
+  "당신은 내 욕망의 대상이요, 내가 이 세상에 존재하는 첫번째 이유입니다!!!~",
+  " "
+)
+tibble(text = love_v) %>% filter(!str_detect(string = text,pattern = '그대'))
+
+
+tibble(text = love_v) %>% 
+  unnest_tokens(output = word, input = text,token = tokenize_tidy) %>% 
+  filter(str_detect(string = word, pattern = "그대"))
+
+love_v %>% str_which(pattern = "You")
+love_v %>% str_count(pattern = "You")
+
+# stringr -----------------------------------------------------------------
+rm(list=ls())
+
+text <- '13인의 아해가 도로로 질주하오.
+(길은 막다른 골목이 적당하오.)
+
+제1의 아해가 무섭다고 그리오.
+제2의 아해도 무섭다고 그리오.
+제3의 아해도 무섭다고 그리오.
+제4의 아해도 무섭다고 그리오.
+제5의 아해도 무섭다고 그리오.
+제6의 아해도 무섭다고 그리오.
+제7의 아해도 무섭다고 그리오.
+제8의 아해도 무섭다고 그리오.
+제9의 아해도 무섭다고 그리오.
+제10의 아해도 무섭다고 그리오.
+제11의 아해가 무섭다고 그리오.
+제12의 아해도 무섭다고 그리오.
+제13의 아해도 무섭다고 그리오.
+13인의 아해는 무서운 아해와 무서워하는 아해와 그렇게뿐이 모였소.
+(다른 사정은 없는 것이 차라리 나았소)
+
+그중에 1인의 아해가 무서운 아해라도 좋소.
+그중에 2인의 아해가 무서운 아해라도 좋소.
+그중에 2인의 아해가 무서워하는 아해라도 좋소.
+그중에 1인의 아해가 무서워하는 아해라도 좋소.
+
+(길은 뚫린 골목이라도 적당하오.)
+13인의 아해가 도로로 질주하지 아니하여도 좋소.
+'
+
+text %>% str_squish() %>% str_extract_all(pattern = '\\w*\\d+\\w*') 
+text %>% str_squish() %>% str_remove_all(pattern = '\\w*\\d+\\w*')
+text %>% str_squish() %>% str_replace_all(pattern = '아해\\w*','아해')
+text %>% str_squish() %>% str_extract_all(pattern = '질주\\w*')
+text %>% str_squish() %>% str_replace_all(pattern = '질주\\w*','질주')
+text %>% str_squish() %>% str_extract_all(pattern = '무\\w*')
+text %>% str_squish() %>% str_replace_all(pattern = '무\\w*','무섭다')
+
+
+
+ogamdo_clean_v <- text %>% str_squish() %>% str_remove_all(pattern = '\\w*\\d+\\w*')%>%
+  str_replace_all(pattern = '아해\\w*','아해')%>%
+  str_replace_all(pattern = '질주\\w*','질주')%>%
+  str_replace_all(pattern = '무\\w*','무섭다')
+
+ogamdo_clean_v %>% tokenize() %>%
+  count(form, sort = T) %>%
+  filter(str_count(form) > 1) %>%
+  mutate(text = reorder(form,n)) %>% 
+  ggplot(aes(text,n))+
+  geom_col() +
+  coord_flip()
+
+# dplyr -------------------------------------------------------------------
+rm(list=ls())
+
+data("stop_words")  
+glimpse(stop_words)
+stop_words %>% distinct(lexicon)
+
+stop_words %>% group_by(lexicon) %>% glimpse()
+stop_words %>% summarise(wordN = n())
+stop_words %>% group_by(lexicon) %>% summarise(wordN = n())
+stop_words %>% count(word)
