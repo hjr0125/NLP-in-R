@@ -9,6 +9,7 @@ library(modelsummary)
 library(epubr)
 library(rvest)
 library(wordcloud)
+library(tidylo)
 
 conflict_prefer('tokenize','elbird')
 conflict_prefer('filter','dplyr')
@@ -99,7 +100,7 @@ text %>% ggplot(aes(words,n)) + geom_col() + coord_flip()
 # Binary File -------------------------------------------------------------
 rm(list = ls())
 
-download.file('https://www.dropbox.com/s/ug3pi74dnxb66wj/jikji.epub?dl=1',destfile = 'jikji.epub',mode='wb')
+# download.file('https://www.dropbox.com/s/ug3pi74dnxb66wj/jikji.epub?dl=1',destfile = 'jikji.epub',mode='wb')
 
 jikji_df <- epub('jikji.epub')
 jikji_df %>% str()
@@ -139,14 +140,14 @@ moby_html %>% html_node('body') %>% html_text()
 # Exercise ----------------------------------------------------------------
 rm(list=ls())
 
-moby_url <- 'https://www.gutenberg.org/ebooks/2701.epub.noimages'
-download.file(url = moby_url, 
-              destfile = "moby.epub",
-              mode="wb")
-sense_url <- 'https://www.gutenberg.org/ebooks/161.epub.noimages'
-download.file(url = sense_url, 
-              destfile = "sense.epub",
-              mode="wb")
+# moby_url <- 'https://www.gutenberg.org/ebooks/2701.epub.noimages'
+# download.file(url = moby_url, 
+#               destfile = "moby.epub",
+#               mode="wb")
+# sense_url <- 'https://www.gutenberg.org/ebooks/161.epub.noimages'
+# download.file(url = sense_url, 
+#               destfile = "sense.epub",
+#               mode="wb")
 
 
 moby <- epub('moby.epub')
@@ -637,41 +638,42 @@ file_v %>% str_view_all('[:alpha:]+2\\d{2}[1-9][:punct:]+\\w+')
 
 # 감정분석 --------------------------------------------------------------------
 
-url_v <- "https://github.com/park1200656/KnuSentiLex/archive/refs/heads/master.zip"
-dest_v <- "/knusenti.zip"
+# url_v <- "https://github.com/park1200656/KnuSentiLex/archive/refs/heads/master.zip"
+# dest_v <- "/knusenti.zip"
+# 
+# download.file(url = url_v,
+#               destfile = 'knusenti.zip',
+#               mode = "wb")
+# 
+# list.files(getwd())
+# 
+# unzip('knusenti.zip')
+# 
+# list.files('KnuSentiLex-master/')
+# 
+# senti_name_v <- list.files("KnuSentiLex-master/.")[9]
+# 
+# senti_dic_df <- read_tsv(str_c("KnuSentiLex-master/", senti_name_v),col_names = F)
+# senti_dic_df <- senti_dic_df %>% rename(word = X1, sScore = X2)
+# 
+# senti_dic_df %>% filter(sScore == 2) %>% arrange(word)
+# senti_dic_df %>% 
+#   filter(!is.na(sScore)) %>% 
+#   add_row(word = "갈등", sScore = -1) -> senti_dic_df 
+# 
+# senti_dic_df<- senti_dic_df %>% 
+#    add_row(word = '귀엽', sScore = 2)
+# 
+# senti_dic_df<- senti_dic_df %>%
+#   mutate(sScore = replace(sScore, word == '원망', - 2))
+#   
+# 
+# senti_dic_df<- senti_dic_df %>%
+#   mutate(sScore = replace(sScore, word == '원통', - 2))
+# 
+# write_csv(senti_dic_df,file = 'sentimental_dic.csv')
 
-download.file(url = url_v,
-              destfile = 'knusenti.zip',
-              mode = "wb")
-
-list.files(getwd())
-
-unzip('knusenti.zip')
-
-list.files('KnuSentiLex-master/')
-
-senti_name_v <- list.files("KnuSentiLex-master/.")[9]
-
-senti_dic_df <- read_tsv(str_c("KnuSentiLex-master/", senti_name_v),col_names = F)
-senti_dic_df <- senti_dic_df %>% rename(word = X1, sScore = X2)
-
-senti_dic_df %>% filter(sScore == 2) %>% arrange(word)
-senti_dic_df %>% 
-  filter(!is.na(sScore)) %>% 
-  add_row(word = "갈등", sScore = -1) -> senti_dic_df 
-
-senti_dic_df<- senti_dic_df %>% 
-   add_row(word = '귀엽', sScore = 2)
-
-senti_dic_df<- senti_dic_df %>%
-  mutate(sScore = replace(sScore, word == '원망', - 2))
-  
-
-senti_dic_df<- senti_dic_df %>%
-  mutate(sScore = replace(sScore, word == '원통', - 2))
-
-write_csv(senti_dic_df,file = 'sentimental_dic.csv')
-
+senti_dic_df <- read_csv('sentimental_dic.csv')
 
 con_v <- "유구한 역사와 전통에 빛나는 우리 대한국민은 3·1운동으로 건립된 대한민국임시정부의 법통과 불의에 항거한 4·19민주이념을 계승하고, 조국의 민주개혁과 평화적 통일의 사명에 입각하여 정의·인도와 동포애로써 민족의 단결을 공고히 하고, 모든 사회적 폐습과 불의를 타파하며, 자율과 조화를 바탕으로 자유민주적 기본질서를 더욱 확고히 하여 정치·경제·사회·문화의 모든 영역에 있어서 각인의 기회를 균등히 하고, 능력을 최고도로 발휘하게 하며, 자유와 권리에 따르는 책임과 의무를 완수하게 하여, 안으로는 국민생활의 균등한 향상을 기하고 밖으로는 항구적인 세계평화와 인류공영에 이바지함으로써 우리들과 우리들의 자손의 안전과 자유와 행복을 영원히 확보할 것을 다짐하면서 1948년 7월 12일에 제정되고 8차에 걸쳐 개정된 헌법을 이제 국회의 의결을 거쳐 국민투표에 의하여 개정한다."
 
@@ -682,11 +684,11 @@ con_tk %>% rename(word = form) %>%  inner_join(senti_dic_df) %>% summarise(tscor
 
 
 # exercise ----------------------------------------------------------------
-dir.create("data")
-file_url <- 'https://www.dropbox.com/s/ug3pi74dnxb66wj/jikji.epub?dl=1'
-download.file(url = file_url, 
-              destfile = "jikji.epub",
-              mode="wb")
+# dir.create("data")
+# file_url <- 'https://www.dropbox.com/s/ug3pi74dnxb66wj/jikji.epub?dl=1'
+# download.file(url = file_url, 
+#               destfile = "jikji.epub",
+#               mode="wb")
 
 jikji_all_df <- epub("jikji.epub") %>% .$data %>% .[[1]] %>% 
   arrange(desc(nchar))
@@ -714,9 +716,8 @@ sosul2_df %>% unnest_tokens(word, main, token = tokenize_tidy) %>%
   inner_join(senti_dic_df) %>% 
   group_by(author) %>% 
   filter(word != '해') %>% 
-  count(word,sScore,sort = T) %>% 
-  mutate(word = reorder(word,n)) %>% 
-  ggplot(aes(n,word,fill = sScore))+
+  count(word,sScore,sort = T) %>%
+  ggplot(aes(n,reorder(word,n),fill = sScore))+
   geom_col() + scale_fill_gradient() + 
   facet_wrap(~author,scales = 'free')
   
@@ -761,4 +762,167 @@ sosul2_emo %>% ggplot(aes(x = index, y = sentiment, fill = author)) +
   geom_col() +
   facet_wrap( ~ author, scale = 'free') + geom_smooth()
 
+
+# Exercise ----------------------------------------------------------------
+
+text <- tibble(word = '안희연의 시는 읽힌다. 읽을 기운을 포함해 살아갈 힘이 부족할 때도. 화려한 표현이나 어떤 반응을 자아내려는 장치의 피로를 배척하는 시. 의연한 태도, 맑고 풍성한 시어들에선 잘해보겠다는 마음을 내려놓을 때의 겸손도 느껴진다. 마주할 세상 앞에서 모든 턱을 낮추겠다는 마음이 먼저인 이에게 안희연의 글은 좋은 친구가 된다.
+그가 세 번째 산문집 <단어의 집>을 펴냈다. “단어 생활자” 시인이 낱말로 세상을 흡수하는 모습을 볼 수 있는 첫 산문집이기도 하다.
+45가지 단어가 소개된다. 버럭 아니고 “버력”. 광물이 들어 있지 않아 버려지는 허드레 돌을 뜻하는 단어로, 방파제 기초공사에 쓰이곤 한다. “이 세계가 광산이라면 신은 성실하게 인간 광물을 캐낼 것이다. 금인지 은인지, 버력인지 일단은 캐봐야 한다. 시작해봐야 알고, 끝나봐야 안다. 그러니까 나라는 인간의 최후를 미리부터 결론 내지 말고 일단은 나를 잘 다듬어가는 게 맞다. 적어도 내 삶을 버력의 자리에는 두지 않기 위해서.”
+건물 하중을 견디는 구조체로, 맨 마지막까지 철거할 수 없는 벽을 가리키는 단어는 “내력벽”이다. 사람이 건물이라면 “모든 걸 부숴도 부서지지 않는 최후의 보루, 영혼의 핵심인 셈이니 그 자체로 의미 있고 아름다운 것”이다.
+글을 쓰지 못하던 “무색무취무미한” 번아웃 시기에, 흔한 네온사인으로부터 글을 얻은 에피소드는 얼마나 반짝이는지. 색, 냄새, 맛이 없는 안정된 기체의 단어 “네온”. 네온사인을 만들려면 공기를 증류해 추출한 네온을 다시 유리관에 넣어 방전시키는 과정이 필요하다는 걸 알게 된 순간, 안희연은 “어김없이” 시를 발견한다.
+“네온의 방전은 빛이 된대요. 방전에도 쓸모가 있어요. 그러니 방전되세요! 우리 일어나지 말아요. 이불 속에 그냥 있어요. 몸을 일으켜야 한다는 강박에 사로잡히지도 말아요. 멀리서 보면 네온사인처럼 보일 거예요. 꿈과 희망은 내일 날 밝으면 해요 우리.”
+모든 단어는 시를 품고서 “몸에 붙”는다고 시인은 쓴다. 시가 우리를 덮은 피부라면, 영혼의 “따뜻한 움막”이라면. 단어의 집에 머무는 한 ‘끝’이란 말도 허무하지만은 않다. 똑같은 소리를 가진 단어 “끗”에서 시를 찾을 수 있으니. “끝이 아닌 끗의 자리에서, 끗과 함께, 한 끗 차이로도 완전히 뒤집히는 세계의 비밀을 예민하게 목격하는 자”로 살고 싶어진다.')
+
+text %>% unnest_tokens(word, word, token = tokenize_tidy) %>% 
+  separate_wider_delim(word,delim = '/',names = c('word','type')) %>% 
+  inner_join(senti_dic_df) %>% 
+  count(word,sScore,sort = T) %>% 
+  ggplot(aes(n,reorder(word,n),fill= sScore)) + 
+  geom_col()
+
+
+text %>% unnest_tokens(word, word, token = tokenize_tidy) %>% 
+  separate_wider_delim(word,delim = '/',names = c('word','type')) %>% 
+  inner_join(senti_dic_df) %>% 
+  summarise(sentiment = sum(sScore))
+
+# 상대빈도 --------------------------------------------------------------------
+
+# 개별 문서의 주제를 추론하려면 모든 문서에 걸쳐 사용빈도가 높은 단어보다는
+# 개별 문서에서만 사용빈도가 높은 단어를 찾아야 한다. 
+# 즉, 개별 문서에 등장하는 단어의 상대빈도가 높은 단어가 개별 문서의 의미를 잘 나타낸다.
+
+# tf_idf ------------------------------------------------------------------
+
+sky_v <-  c( "The sky is blue.", 
+             "The sun is bright today.",
+             "The sun in the sky is bright.", 
+             "We can see the shining sun, the bright sun.")
+
+sky_doc <- tibble(text = sky_v) %>% 
+  unnest_tokens(sentence, text, token = "sentences") %>% 
+  mutate(lineID = row_number()) %>% 
+  mutate(lineID = as.factor(lineID))
+
+sky_doc
+
+sky_tfd <- 
+  sky_doc %>% 
+  unnest_tokens(word, sentence) %>% 
+  anti_join(stop_words) %>% 
+  count(lineID, word) %>% 
+  rename(tfdoc = n)
+
+
+sky_tft <- sky_tfd %>% 
+  mutate(N = length(unique(lineID))) %>%  #total number of documnets
+  count(lineID) %>% 
+  rename(tftotal = n)
+
+sky_tf <- left_join(sky_tfd, sky_tft) %>% 
+  mutate(tf = tfdoc/tftotal)
+
+sky_tf
+
+sky_df <- table(sky_tf$word) %>% 
+  as.data.frame() %>% 
+  rename(word = Var1, df = Freq)
+
+sky_tf <- 
+  sky_tf %>% 
+  mutate(N = length(unique(lineID))) #total number of documnets
+
+
+sky_idf <- left_join(sky_tf,sky_df) %>% 
+  mutate(idf = log(N /df))
+
+sky_idf %>% 
+  mutate(tf_idf = tf*idf) %>% 
+  arrange(-tf_idf)
+
+sky_tfd %>% 
+  bind_tf_idf(tbl = ., term = word, document = lineID, n = tfdoc) %>% 
+  arrange(-tf_idf)
+
+# odds ratio --------------------------------------------------------------
+# 
+# url_v <- 'https://github.com/e9t/nsmc/raw/master/ratings.txt'
+# dest_v <- 'ratings.txt'
+# 
+# download.file(url_v, dest_v, mode = "wb")
+
+read_lines('ratings.txt')
+read_tsv('ratings.txt') %>% glimpse()
+ratings_df <- read_tsv("ratings.txt") 
+
+
+set.seed(37)
+by1000_df <- 
+  ratings_df %>% 
+  group_by(label) %>% 
+  sample_n(size = 1000)
+by1000_df %>% head(30)
+
+
+rate_odds_df <- by1000_df %>% unnest_tokens(word,document,token = tokenize_tidy) %>% 
+  separate_wider_delim(word,delim = '/',names = c('word','type')) %>% 
+  filter(type == 'nng') %>% 
+  filter(word != '영화') %>% 
+  count(word, sort = T) %>% 
+  pivot_wider(names_from = label,values_from = n,values_fill = list(n = 0)) %>% 
+  rename(긍정 = '1', 부정 = '0' ) %>% 
+  mutate(odd_pos = (긍정+1)/(sum(긍정)+1),odd_neg = (부정+1)/(sum(부정)+1)) %>% 
+  mutate(pos_neg_odd = odd_pos/odd_neg) %>% 
+  filter(rank(pos_neg_odd)<=20|rank(-pos_neg_odd)<=20) %>% 
+  arrange(-pos_neg_odd)
+
+rate_odds_df %>% head()
+rate_odds_df %>% tail()
+
+
+rate_odds_df %>% mutate(label = ifelse(pos_neg_odd < 1, '부정','긍정')) %>% group_by(label) %>% 
+  ggplot(aes(pos_neg_odd,reorder(word,pos_neg_odd),fill = label))+ geom_col() + facet_wrap(~label, scales = 'free')
+
+by1000_df %>% unnest_tokens(word,document,token = tokenize_tidy) %>% 
+  separate_wider_delim(word,delim = '/',names = c('word','type')) %>% 
+  filter(type == 'nng') %>% 
+  filter(word != '영화') %>% 
+  count(word, sort = T) %>% 
+  pivot_wider(names_from = label,values_from = n,values_fill = list(n = 0)) %>% 
+  rename(긍정 = '1', 부정 = '0' ) %>% 
+  mutate(odd_pos = (긍정+1)/(sum(긍정)+1),odd_neg = (부정+1)/(sum(부정)+1)) %>% 
+  mutate(pos_neg_odd = odd_pos/odd_neg) %>% 
+  arrange(abs(1-pos_neg_odd)) %>% 
+  filter(부정 > 10 & 긍정 > 10)
+
+# log odds ratio ----------------------------------------------------------
+
+log_rate_df <- by1000_df %>% unnest_tokens(word,document,token = tokenize_tidy) %>% 
+  separate_wider_delim(word,delim = '/',names = c('word','type')) %>% 
+  filter(type == 'nng') %>% 
+  filter(word != '영화') %>% 
+  count(word, sort = T) %>% 
+  pivot_wider(names_from = label,values_from = n,values_fill = list(n = 0)) %>% 
+  rename(긍정 = '1', 부정 = '0' ) %>% 
+  mutate(odd_pos = (긍정+1)/(sum(긍정)+1),odd_neg = (부정+1)/(sum(부정)+1)) %>% 
+  mutate(pos_neg_odd = odd_pos/odd_neg) %>% 
+  mutate(log_odd_ratio = log(pos_neg_odd))
+
+log_rate_df %>% group_by(label = ifelse(log_odd_ratio>0,'긍정','부정')) %>% 
+  slice_max(abs(log_odd_ratio), n =10) %>% 
+  ggplot(aes(log_odd_ratio,reorder(word,log_odd_ratio),fill = label)) + 
+  geom_col()
+
+# Weighted log odds -------------------------------------------------------
+
+wlo <- by1000_df %>% unnest_tokens(word,document,token = tokenize_tidy) %>% 
+  separate_wider_delim(word,delim = '/',names = c('word','type')) %>% 
+  filter(type == 'nng') %>% 
+  filter(word != '영화') %>% 
+  count(word) %>% 
+  bind_log_odds(set = label,feature = word, n = n) %>% 
+  arrange(-log_odds_weighted)
+wlo %>% group_by(label = ifelse(label > 0 ,'긍정', '부정')) %>% 
+  slice_max(abs(log_odds_weighted), n = 10) %>% 
+  ggplot(aes(log_odds_weighted,reorder(word,n),fill = label)) + geom_col() + facet_wrap(~label, scales = 'free')
 
