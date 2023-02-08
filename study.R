@@ -10,6 +10,8 @@ library(epubr)
 library(rvest)
 library(wordcloud)
 library(tidylo)
+library(openxlsx)
+library(skimr)
 
 conflict_prefer('tokenize','elbird')
 conflict_prefer('filter','dplyr')
@@ -926,3 +928,53 @@ wlo %>% group_by(label = ifelse(label > 0 ,'긍정', '부정')) %>%
   slice_max(abs(log_odds_weighted), n = 10) %>% 
   ggplot(aes(log_odds_weighted,reorder(word,n),fill = label)) + geom_col() + facet_wrap(~label, scales = 'free')
 
+
+# Exercise ----------------------------------------------------------------
+rm(list = ls())
+library(readxl)
+news <- read_excel("news.xlsx") %>% select(언론사,제목,본문,URL)
+skim(news)
+news_tk <- news %>% unnest_tokens(word,본문,token = tokenize_tidy)
+news_tk <- news_tk %>% separate(word,c('word','type'),sep = '/') %>% 
+  filter(type == 'nng')
+
+news_tk %>% count(언론사,word,sort = T) %>% 
+  filter(word != "경향") %>% 
+  filter(word != "포토") %>% 
+  filter(word != "문화") %>% 
+  filter(word != "조선") %>% 
+  filter(word != "한겨레") %>% 
+  filter(word != "백신") %>%
+  filter(word != "접종") %>% 
+  group_by(언론사) %>% 
+  slice_max(n, n = 7) %>% 
+  ggplot(aes(n,reorder(word,n),fill=언론사)) + geom_col()+facet_wrap(~언론사,scales = 'free')
+
+title_tk <- news %>% unnest_tokens(word,제목,token = tokenize_tidy,drop = F) %>% 
+  separate(word,c('word','type'),sep = '/') %>% 
+  filter(type == 'nng')
+title_tk %>%   filter(word != "경향") %>% 
+  filter(word != "포토") %>% 
+  filter(word != "문화") %>% 
+  filter(word != "조선") %>% 
+  filter(word != "한겨레") %>% 
+  filter(word != "백신") %>%
+  filter(word != "접종") %>% 
+  count(word,언론사,sort = T)
+title_tk %>% filter(word == '요양') %>% count(언론사)
+
+
+
+news_tk %>% count(언론사,word,sort = T) %>% 
+  filter(word != "경향") %>% 
+  filter(word != "포토") %>% 
+  filter(word != "문화") %>% 
+  filter(word != "조선") %>% 
+  filter(word != "한겨레") %>% 
+  filter(word != "백신") %>%
+  filter(word != "접종") %>% 
+  bind_log_odds(언론사,word,n=n) %>% 
+  group_by(언론사) %>% 
+  slice_max(abs(log_odds_weighted), n = 7) %>% 
+  ggplot(aes(log_odds_weighted,reorder(word,log_odds_weighted),fill=언론사)) +
+  geom_col()+facet_wrap(~언론사,scales = 'free')
