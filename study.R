@@ -1199,7 +1199,7 @@ keyATM_docs <- keyATM_read(combined_df)
 out <- weightedLDA(keyATM_docs,number_of_topics = 10,model = 'base')
 
 # Covariate STM -----------------------------------------------------------
-
+rm(list=ls())
 vac_df <- 
   read_excel("NewsResult_20210101-20210331.xlsx") %>% 
   select(일자, 제목, 본문, 언론사, cat = `통합 분류1`, 키워드) 
@@ -1239,4 +1239,47 @@ vac2_df <-
     cat == "지역" ~ "사회면",
     TRUE ~ "비사회면") )
 
+# Data의 키워드를 기준으로 token화
+fullchar_v <- "ㆍ|ㅣ|‘|’|“|”|○|●|◎|◇|◆|□|■|△|▲|▽|▼|〓|◁|◀|▷|▶|♤|♠|♡|♥|♧|♣|⊙|◈|▣"
 
+vac_tk <- 
+  vac2_df %>% 
+  mutate(키워드 = str_remove_all(키워드, "[^(\\w+|\\d+|,)]")) %>% 
+  mutate(키워드 = str_remove_all(키워드, fullchar_v)) %>% 
+  unnest_tokens(word, 키워드, token = "regex", pattern = ",") 
+
+vac_tk %>% arrange(ID) %>% head(30)
+
+count_df <- vac_tk %>% count(word,sort =T)
+count_df %>% head(30)
+
+combined_df <- vac_tk %>% 
+  group_by(ID) %>% 
+  summarise(text2 = str_flatten(word," ")) %>% 
+  ungroup() %>% 
+  inner_join(vac2_df)
+
+processed <- combined_df %>% textProcessor(
+  documents = combined_df$text2,
+  metadata = .,
+  wordLengths = c(2,Inf)
+)
+
+summary(processed)
+out <-
+  prepDocuments(processed$documents,
+                processed$vocab,
+                processed$meta,
+                lower.thresh = 0)
+summary(out)
+
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+
+
+topicN <- c(3, 9, 100)
+
+storage <- searchK(docs, vocab, K = topicN)
+storage
+plot(storage)
