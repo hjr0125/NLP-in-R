@@ -12,6 +12,9 @@ library(wordcloud)
 library(tidylo)
 library(openxlsx)
 library(skimr)
+library(stm)
+library(lubridate)
+library(readxl)
 
 conflict_prefer('tokenize','elbird')
 conflict_prefer('filter','dplyr')
@@ -965,7 +968,7 @@ title_tk %>% filter(word == '요양') %>% count(언론사)
 
 
 
-news_tk %>% count(언론사,word,sort = T) %>% 
+news_tk <- news_tk %>% count(언론사,word,sort = T) %>% 
   filter(word != "경향") %>% 
   filter(word != "포토") %>% 
   filter(word != "문화") %>% 
@@ -974,7 +977,264 @@ news_tk %>% count(언론사,word,sort = T) %>%
   filter(word != "백신") %>%
   filter(word != "접종") %>% 
   bind_log_odds(언론사,word,n=n) %>% 
-  group_by(언론사) %>% 
-  slice_max(abs(log_odds_weighted), n = 7) %>% 
-  ggplot(aes(log_odds_weighted,reorder(word,log_odds_weighted),fill=언론사)) +
-  geom_col()+facet_wrap(~언론사,scales = 'free')
+  group_by(언론사)
+total <- news_tk %>% 
+  slice_max(n, n = 7)
+rel <- news_tk %>% 
+  slice_max(abs(log_odds_weighted), n = 7)
+bind_rows(select(total,언론사,word,score = n),
+          select(rel,word,언론사,score = log_odds_weighted),.id = 'ID') %>% 
+  mutate(ID = ifelse(ID == 1 , 'total','wlo' )) %>% 
+  ggplot(aes(score, reorder(word,score),fill = 언론사)) + geom_col()+
+  facet_wrap(~ID + 언론사, scales = 'free',ncol = 4)
+
+# 주제모형 --------------------------------------------------------------------
+rm(list = ls())
+ap_v <- c("The William Randolph Hearst Foundation will give $1.25 million to Lincoln Center, Metropolitan Opera Co., New York Philharmonic and Juilliard School. “Our board felt that we had a
+real opportunity to make a mark on the future of the performing arts with these grants an act
+every bit as important as our traditional areas of support in health, medical research, education
+and the social services,” Hearst Foundation President Randolph A. Hearst said Monday in
+announcing the grants. Lincoln Center’s share will be $200,000 for its new building, which
+will house young artists and provide new public facilities. The Metropolitan Opera Co. and
+New York Philharmonic will receive $400,000 each. The Juilliard School, where music and
+the performing arts are taught, will get $250,000. The Hearst Foundation, a leading supporter
+of the Lincoln Center Consolidated Corporate Fund, will make its usual annual $100,000
+donation, too.")
+
+
+#총빈도
+ap_count <- 
+  ap_v %>% tibble(text = .) %>% 
+  unnest_tokens(word, text, drop = F) %>% 
+  anti_join(stop_words) %>% 
+  count(word, sort = T) %>% head(10)
+#상대빈도
+ap_tfidf <- 
+  ap_v %>% tibble(text = .) %>% 
+  mutate(text = str_squish(text)) %>% 
+  unnest_tokens(sentence, text, token = "regex", pattern = "\\.\\s(?=[:upper:])") %>% 
+  mutate(ID = row_number()) %>% 
+  unnest_tokens(word, sentence, drop = F) %>% 
+  anti_join(stop_words) %>% 
+  count(ID, word, sort = T) %>% 
+  bind_tf_idf(term = word, document = ID, n = n) %>% 
+  arrange(-tf_idf) %>% head(10)
+
+ap_wlo <- 
+  ap_v %>% tibble(text = .) %>% 
+  mutate(text = str_squish(text)) %>% 
+  unnest_tokens(sentence, text, token = "regex", pattern = "\\.\\s(?=[:upper:])") %>% 
+  mutate(ID = row_number()) %>% 
+  unnest_tokens(word, sentence, drop = F) %>% 
+  anti_join(stop_words) %>% 
+  count(ID, word, sort = T) %>% 
+  bind_log_odds(feature = word, set = ID, n = n) %>% 
+  arrange(-log_odds_weighted) %>% head(10)
+
+bind_cols(
+  select(ap_count,  총빈도  = word),
+  select(ap_tfidf, tf_idf = word),
+  select(ap_wlo,  가중승산비  = word)
+)
+
+
+# stm ---------------------------------------------------------------------
+rm(list =ls())
+
+
+ai <- read_excel("ai.xlsx") %>% select(언론사,제목,본문,일자,cat = '통합 분류1')
+ai2_df <- ai %>% 
+  distinct(제목,.keep_all = T) %>% 
+  mutate(ID = factor(row_number())) %>% 
+  mutate(month = month(ymd(일자))) %>% 
+  unite(제목,본문,col = 'text',sep = ' ') %>% 
+  mutate(text = str_squish(text)) %>% 
+  mutate(press = case_when(
+    언론사 == "조선일보" ~ "종합지",
+    언론사 == "중앙일보" ~ "종합지",
+    언론사 == "경향신문" ~ "종합지",
+    언론사 == "한겨레" ~ "종합지",
+    언론사 == "한국경제" ~ "경제지",
+    TRUE ~ "경제지") ) %>% 
+  # 기사 분류 구분 
+  mutate(cat = str_extract(cat,'\\w+(?=>)'), cat2 = str_extract(cat,'(?<=>)\\w*')) %>% 
+  # IT_과학, 경제, 사회 만 선택
+  filter(str_detect(cat, "IT_과학|경제|사회")) %>% 
+  select(-cat2)  
+
+ai2_df %>% count(cat, sort = T)
+ai2_df %>% count(month)
+ai2_df %>% count(press, sort = T)
+
+
+ai_tk <- ai2_df %>% 
+  mutate(text = str_remove_all(text,"[^(\\w+|\\s)]")) %>% 
+  unnest_tokens(word,text, token = tokenize_tidy,drop = F)
+
+ai_tk <- ai_tk %>%  separate(word,c('word','type'),sep = '/') %>% 
+  filter(!word %in% c('인공지능','AI','ai','인공지능AI','인공지능ai')) %>% 
+  filter(str_detect(word,'[:alpha:]+'))
+
+ai_tk <- ai_tk %>% filter(!word %in% c('인공','지능'))
+
+ai_tk %>% count(word,sort=T)
+
+ai_tk %>% count(cat, word, sort = T) %>% 
+  bind_log_odds(set = cat, feature = word, n = n) %>% 
+  arrange(-log_odds_weighted)
+
+ai_tk %>% count(cat, word, sort = T) %>% 
+  bind_tf_idf(term = word, document = word, n = n) %>% 
+  arrange(idf)
+
+ai_tk %>% 
+  filter(word == "차") %>% pull(text) %>% head(3)
+
+ai2_tk <- ai_tk %>% 
+  filter(str_length(word) > 1) 
+
+ai2_tk %>% count(cat, word, sort = T) %>% 
+  bind_log_odds(set = cat, feature = word, n = n) %>% 
+  arrange(-log_odds_weighted)
+
+#Using STM
+
+# combined_df <-
+  ai2_tk %>%
+  group_by(ID) %>%
+  summarise(text2 = str_flatten(word, " ")) %>%
+  ungroup() %>% 
+  inner_join(ai2_df, by = "ID")
+
+processed <- 
+  ai2_df %>% textProcessor(documents = combined_df$text2, metadata = .,wordLengths = c(2,Inf))
+
+out <- 
+  prepDocuments(processed$documents,
+                processed$vocab,
+                processed$meta)
+
+plotRemoved(processed$documents, lower.thresh = seq(0, 100, by = 5))
+
+
+out <-
+  prepDocuments(processed$documents,
+                processed$vocab,
+                processed$meta, 
+                lower.thresh = 15)
+
+docs <- out$documents
+vocab <- out$vocab
+meta <- out$meta
+
+
+topicN <- c(3, 10)
+
+storage <- searchK(docs, vocab, K = topicN)
+plot(storage)
+
+
+stm_fit <-
+  stm(
+    documents = docs,
+    vocab = vocab,
+    K = 10,    # 토픽의 수
+    data = meta,
+    init.type = "Spectral",
+    seed = 37 # 반복실행해도 같은 결과가 나오게 난수 고정
+  )
+
+summary(stm_fit)
+
+stm_fit <-
+  stm(
+    documents = docs,
+    vocab = vocab,
+    K = 6,    # 토픽의 수
+    data = meta,
+    init.type = "Spectral",
+    seed = 37, # 반복실행해도 같은 결과가 나오게 난수 고정
+    verbose = F
+  )
+
+summary(stm_fit) %>% glimpse()
+
+td_beta <- stm_fit %>% tidy(matrix = 'beta') 
+
+td_beta %>% 
+  group_by(topic) %>% 
+  slice_max(beta, n = 7) %>% 
+  ungroup() %>% 
+  mutate(topic = str_c("주제", topic)) %>% 
+  
+  ggplot(aes(x = beta, 
+             y = reorder(term, beta),
+             fill = topic)) +
+  geom_col(show.legend = F) +
+  facet_wrap(~topic, scales = "free") +
+  labs(x = expression("단어 확률분포: "~beta), y = NULL,
+       title = "주제별 단어 확률 분포",
+       subtitle = "각 주제별로 다른 단어들로 군집") +
+  theme(plot.title = element_text(size = 20))
+
+
+td_gamma <- stm_fit %>% tidy(matrix = "gamma") 
+td_gamma %>% glimpse()
+td_gamma %>% 
+  mutate(max = max(gamma),
+         min = min(gamma),
+         median = median(gamma))
+
+td_gamma %>% 
+  ggplot(aes(x = gamma, fill = as.factor(topic))) +
+  geom_histogram(bins = 100) +
+  facet_wrap(~topic)
+
+plot(stm_fit, type = "hist", n = 5)
+
+# keyatm ------------------------------------------------------------------
+combined_df <- combined_df %>% rename(text = text2, main = text)
+keyATM_docs <- keyATM_read(combined_df)
+
+out <- weightedLDA(keyATM_docs,number_of_topics = 10,model = 'base')
+
+# Covariate STM -----------------------------------------------------------
+
+vac_df <- 
+  read_excel("NewsResult_20210101-20210331.xlsx") %>% 
+  select(일자, 제목, 본문, 언론사, cat = `통합 분류1`, 키워드) 
+vac_df %>% head(3)
+set.seed(37)
+vac_sample_df <-   
+  vac_df %>% 
+  sample_n(size = 3000) 
+vac_df %>% glimpse()
+
+
+vac2_df <- 
+  vac_df %>% 
+  # 중복기사 제거
+  distinct(제목, .keep_all = T) %>% 
+  # 기사별 ID부여
+  mutate(ID = factor(row_number())) %>% 
+  # 월별로 구분한 열 추가(lubridate 패키지)
+  mutate(week = week(ymd(일자))) %>%       
+  # 기사 제목과 본문 결합
+  unite(제목, 본문, col = "text", sep = " ") %>% 
+  # 중복 공백 제거
+  mutate(text = str_squish(text)) %>% 
+  # 언론사 구분: 야당지, 여당지 %>% 
+  mutate(press = case_when(
+    언론사 == "조선일보" ~ "야당지",
+    언론사 == "중앙일보" ~ "야당지",
+    언론사 == "경향신문" ~ "여당지",
+    TRUE ~ "여당지") ) %>% 
+  # 기사 분류 구분 
+  separate(cat, sep = ">", into = c("cat", "cat2")) %>% 
+  # IT_과학, 경제, 사회 만 선택
+  select(-cat2) %>% 
+  # 분류 구분: 사회, 비사회
+  mutate(catSoc = case_when(
+    cat == "사회" ~ "사회면",
+    cat == "지역" ~ "사회면",
+    TRUE ~ "비사회면") )
